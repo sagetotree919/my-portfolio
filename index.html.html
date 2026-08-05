@@ -1,0 +1,1540 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAGE — Digital Magazine & Personal Brand Asset</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Noto+Serif+SC:wght@300;400;600;700&family=Plus+Jakarta+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- GSAP CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- OGL CDN for Lightfall & Ferrofluid Shader background components -->
+    <script src="https://unpkg.com/ogl@0.0.116/dist/ogl.umd.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        sage: {
+                            DEFAULT: '#7A8B7B',
+                            light: '#8C9C8D',
+                            dark: '#5C6C5E',
+                            tint: '#F1F3F0',
+                        },
+                        warm: {
+                            white: '#FDFBF7',
+                            gray: '#767772',
+                            dark: '#1C1D1B',
+                            hover: '#ECEAE4',
+                        }
+                    },
+                    fontFamily: {
+                        serif: ['Cormorant Garamond', 'Noto Serif SC', 'serif'],
+                        sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+                        chinese: ['Noto Serif SC', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #FDFBF7;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #D9D6CE;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #7A8B7B;
+        }
+
+        /* Letter Swap CSS Engine */
+        .letter-swap {
+            display: inline-flex;
+            flex-wrap: wrap;
+        }
+        .char-wrapper {
+            display: inline-block;
+            overflow: hidden;
+            position: relative;
+            vertical-align: bottom;
+        }
+        .char-primary, .char-secondary {
+            display: inline-block;
+            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.6s ease;
+            will-change: transform;
+        }
+        .letter-swap:hover .char-primary {
+            transform: translateY(-100%);
+        }
+        .letter-swap:hover .char-secondary {
+            transform: translateY(0) !important;
+        }
+
+        /* Reveal Animation */
+        .reveal-element {
+            opacity: 0;
+            transform: translateY(40px) scale(0.98);
+            transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .reveal-element.active {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        /* Persistent WebGPU/WebGL Canvas Overlay */
+        #webgpu-persistent-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        .editorial-line {
+            background: linear-gradient(to bottom, transparent, rgba(122, 139, 123, 0.15) 10%, rgba(122, 139, 123, 0.15) 90%, transparent);
+        }
+
+        /* Codrops Gooey Text Hover Effect Styling */
+        .gooey-filter-container {
+            filter: url('#gooey-filter');
+        }
+
+        .gooey-link {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            cursor: pointer;
+            padding: 1.5rem 0;
+            text-decoration: none;
+            color: #1C1D1B;
+            transition: color 0.4s ease;
+        }
+
+        .gooey-bg-blob {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            width: 50px;
+            height: 50px;
+            background-color: #7A8B7B;
+            border-radius: 50%;
+            transform: translateY(-50%) scale(0);
+            transition: transform 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .gooey-link:hover .gooey-bg-blob {
+            transform: translateY(-50%) scale(1.8);
+        }
+
+        .gooey-text-wrapper {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .gooey-char {
+            display: inline-block;
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), color 0.3s ease;
+            will-change: transform;
+        }
+
+        .gooey-link:hover .gooey-char {
+            color: #FDFBF7;
+        }
+
+        .gooey-arrow {
+            display: inline-block;
+            opacity: 0;
+            transform: translateX(-20px) scale(0.5);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease, color 0.3s ease;
+        }
+
+        .gooey-link:hover .gooey-arrow {
+            opacity: 1;
+            transform: translateX(10px) scale(1);
+            color: #7A8B7B;
+        }
+
+        /* Article Modal Fullscreen Transition */
+        #article-view {
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+    </style>
+</head>
+<body class="bg-warm-white text-warm-dark font-sans selection:bg-sage/20 selection:text-sage-dark overflow-x-hidden antialiased">
+
+    <!-- ClickSpark Cursor Canvas Overlay -->
+    <canvas id="click-spark-canvas" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 9999;"></canvas>
+
+    <svg style="position: absolute; width: 0; height: 0; overflow: hidden;" aria-hidden="true">
+        <defs>
+            <filter id="gooey-filter">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
+                <feColorMatrix in="blur" mode="matrix" values="
+                    1 0 0 0 0  
+                    0 1 0 0 0  
+                    0 0 1 0 0  
+                    0 0 0 19 -9" result="gooey" />
+                <feComposite in="SourceGraphic" in2="gooey" operator="atop" />
+            </filter>
+        </defs>
+    </svg>
+
+    <!-- Canvas for WebGPU/WebGL Image Plane -->
+    <canvas id="webgpu-persistent-canvas"></canvas>
+
+    <!-- Fixed Elegant Navigation -->
+    <nav class="fixed top-0 left-0 w-full z-50 bg-warm-white/80 backdrop-blur-md border-b border-warm-dark/5 transition-all duration-300 py-6 px-6 lg:px-16 flex justify-between items-center">
+        <a href="#home" class="font-serif text-2xl tracking-widest font-semibold flex items-center gap-2 group">
+            <span class="w-2.5 h-2.5 bg-sage rounded-full group-hover:scale-125 transition-transform duration-300"></span>
+            <span class="letter-swap" data-hover="SAGE">SAGE</span>
+        </a>
+        
+        <div class="hidden md:flex items-center gap-8 lg:gap-12 font-serif text-lg tracking-wider">
+            <a href="#about" class="nav-link text-warm-dark/70 hover:text-sage transition-colors py-2"><span class="letter-swap" data-hover="About">About</span></a>
+            <a href="#explore" class="nav-link text-warm-dark/70 hover:text-sage transition-colors py-2"><span class="letter-swap" data-hover="Explore">Explore</span></a>
+            <a href="#words" class="nav-link text-warm-dark/70 hover:text-sage transition-colors py-2"><span class="letter-swap" data-hover="Words">Words</span></a>
+            <a href="#works" class="nav-link text-warm-dark/70 hover:text-sage transition-colors py-2"><span class="letter-swap" data-hover="Works">Works</span></a>
+            <a href="#contact" class="nav-link text-warm-dark/70 hover:text-sage transition-colors py-2"><span class="letter-swap" data-hover="Contact">Contact</span></a>
+        </div>
+
+        <button id="mobile-menu-btn" class="md:hidden text-2xl focus:outline-none py-2" aria-label="Toggle Menu">
+            <i class="fa-solid fa-bars-staggered"></i>
+        </button>
+    </nav>
+
+    <!-- Mobile Navigation Drawer -->
+    <div id="mobile-drawer" class="fixed inset-y-0 right-0 w-full max-w-sm bg-warm-white z-50 shadow-2xl transform translate-x-full transition-transform duration-500 ease-in-out flex flex-col p-8 border-l border-warm-dark/10">
+        <div class="flex justify-between items-center mb-12">
+            <span class="font-serif text-2xl tracking-widest font-semibold">SAGE</span>
+            <button id="close-drawer-btn" class="text-2xl hover:text-sage transition-colors py-2"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="flex flex-col gap-6 font-serif text-2xl tracking-wider my-auto pl-4">
+            <a href="#about" class="mobile-nav-link text-warm-dark/80 hover:text-sage transition-colors"><span class="letter-swap" data-hover="About">About</span></a>
+            <a href="#explore" class="mobile-nav-link text-warm-dark/80 hover:text-sage transition-colors"><span class="letter-swap" data-hover="Explore">Explore</span></a>
+            <a href="#words" class="mobile-nav-link text-warm-dark/80 hover:text-sage transition-colors"><span class="letter-swap" data-hover="Words">Words</span></a>
+            <a href="#works" class="mobile-nav-link text-warm-dark/80 hover:text-sage transition-colors"><span class="letter-swap" data-hover="Works">Works</span></a>
+            <a href="#contact" class="mobile-nav-link text-warm-dark/80 hover:text-sage transition-colors"><span class="letter-swap" data-hover="Contact">Contact</span></a>
+        </div>
+    </div>
+    
+    <div id="drawer-overlay" class="fixed inset-0 bg-warm-dark/30 z-40 hidden transition-opacity duration-500"></div>
+
+    <!-- MAIN SINGLE PAGE LAYOUT -->
+    <div id="main-content-wrapper">
+        <!-- HOME SECTION -->
+        <section id="home" onclick="document.getElementById('about').scrollIntoView({behavior: 'smooth'})" class="min-h-screen flex flex-col justify-between items-center pt-36 pb-16 px-6 lg:px-16 relative cursor-pointer select-none group">
+            <div class="absolute left-1/4 top-0 w-[1px] h-full editorial-line z-0 hidden md:block pointer-events-none"></div>
+            <div class="absolute right-1/4 top-0 w-[1px] h-full editorial-line z-0 hidden md:block pointer-events-none"></div>
+            
+            <div class="max-w-4xl text-center z-10 my-auto pointer-events-none">
+                <h1 class="font-serif italic text-sage text-4xl sm:text-6xl md:text-7xl tracking-wide reveal-element active transition-transform duration-700 group-hover:scale-105">
+                    "Welcome to Sage's world"
+                </h1>
+                <p class="font-serif italic text-warm-dark/70 text-xl sm:text-2xl md:text-3xl tracking-wide mt-8 reveal-element active" style="transition-delay: 200ms;">
+                    "A silent space for reading, writing, observing, and creating."
+                </p>
+            </div>
+
+            <div class="flex flex-col items-center gap-3 z-10 select-none animate-bounce mt-12 pointer-events-none">
+                <span class="font-serif text-sm tracking-widest text-warm-gray uppercase group-hover:text-sage transition-colors">CLICK ANYWHERE TO ENTER</span>
+                <i class="fa-solid fa-chevron-down text-sage text-lg"></i>
+            </div>
+        </section>
+
+        <!-- ABOUT SECTION -->
+        <section id="about" class="py-16 md:py-24 px-6 lg:px-16 border-t border-warm-dark/5 bg-warm-white relative overflow-hidden">
+            <div class="max-w-7xl mx-auto bg-warm-hover/30 border border-warm-dark/10 rounded-3xl p-6 md:p-10 lg:p-12 shadow-sm">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
+                    
+                    <div class="lg:col-span-6 space-y-4">
+                        <div class="relative bg-warm-white p-3 md:p-4 rounded-2xl border border-warm-dark/10 shadow-md group">
+                            <div id="photo-dom-slot" class="w-full aspect-[3/4] rounded-xl overflow-hidden relative cursor-pointer bg-sage/10 select-none border border-warm-dark/5 shadow-inner"></div>
+                            <div class="flex justify-between items-center mt-4 px-2 font-serif text-sm tracking-wider text-warm-gray">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sage font-semibold">PORTRAIT GALLERY</span>
+                                    <span class="text-warm-dark/30">|</span>
+                                    <span id="photo-counter" class="text-warm-dark font-mono">01 / 08</span>
+                                </div>
+                                <div id="photo-dots" class="flex justify-center gap-2"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-6 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center gap-3 mb-6">
+                                <span class="h-[1px] w-8 bg-sage"></span>
+                                <h2 class="font-serif text-2xl md:text-3xl text-sage uppercase tracking-widest">ABOUT</h2>
+                            </div>
+                            
+                            <h3 class="font-chinese text-3xl md:text-4xl font-semibold text-warm-dark tracking-wide mb-6">
+                                我是 Sage (韩紫)
+                            </h3>
+                            
+                            <div class="font-chinese text-base md:text-lg text-warm-dark/90 leading-relaxed md:leading-loose space-y-5 font-light">
+                                <p class="reveal-element active">我喜欢观察，也喜欢整理。</p>
+                                <p class="reveal-element active">我始终相信，世界是可以被理解的。不是把一切都变得整齐，而是在看似零散的事物之间，找到它们彼此连接的方式。</p>
+                                <p class="reveal-element active">相比快速给出答案，我更享受把一个混乱的问题拆解、梳理，再重新组织成清晰而完整的过程。这种习惯也影响了我的学习和表达。无论是阅读文学、记录生活，还是探索新的领域，我都会先理解它，再寻找属于自己的表达方式。</p>
+                                <p class="reveal-element active">很多人第一次见到我，会觉得我有些安静，甚至难以接近。但熟悉之后，他们会发现我其实乐于交流，也愿意分享自己的思考。我喜欢经典与现代并存的事物，欣赏文学中的细腻，也对新的观念、创意与技术保持好奇。在我看来，它们并不是彼此割裂的兴趣，而是帮助我理解世界的不同路径。</p>
+                                <p class="reveal-element active">这个网站记录着我的作品、阅读、思考与成长。它不是一份简单的作品集，而是我不断探索和不断学习的过程。我希望这里能够真实地呈现我的思考方式，也期待它成为与更多人产生连接的起点。</p>
+                                <p class="reveal-element active">我希望自己始终保持清醒的思考、开放的好奇心，以及对生活的感受力。最终，成为一个能够享受学习、享受创造，也享受生活本身的人。</p>
+                            </div>
+
+                            <div class="mt-10 border-l-2 border-sage pl-5 reveal-element active">
+                                <blockquote class="font-chinese text-lg md:text-xl italic text-warm-dark/80 tracking-wider leading-relaxed">
+                                    “让世界是世界，我甘心是我的茧。”
+                                </blockquote>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Core Philosophy (Ferrofluid WebGL Background) -->
+            <div id="core-philosophy-container" class="max-w-7xl mx-auto mt-20 relative rounded-3xl border border-warm-dark/10 p-8 md:p-14 overflow-hidden shadow-md bg-warm-white/90">
+                <canvas id="ferrofluid-canvas" class="absolute inset-0 w-full h-full pointer-events-auto z-0 block"></canvas>
+
+                <div class="relative z-10 pointer-events-none">
+                    <h3 class="font-serif text-xs md:text-sm text-sage uppercase tracking-widest text-center mb-12 font-semibold">Core Philosophy</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 pointer-events-auto">
+                        <div class="group border border-warm-dark/15 hover:border-sage rounded-2xl p-6 md:p-8 bg-warm-white/85 backdrop-blur-md transition-all duration-500 cursor-pointer shadow-sm hover:shadow-lg">
+                            <div class="flex justify-between items-center mb-6">
+                                <span class="w-2 h-2 rounded-full bg-sage/60 group-hover:bg-sage"></span>
+                            </div>
+                            <h4 class="font-serif text-2xl tracking-wider text-warm-dark mb-3"><span class="letter-swap" data-hover="Observe">Observe</span></h4>
+                            <p class="font-sans text-sm md:text-base text-warm-dark/70 font-light leading-relaxed group-hover:text-warm-dark transition-colors duration-300">
+                                I notice details before making judgments. Curiosity is where every idea begins.
+                            </p>
+                        </div>
+
+                        <div class="group border border-warm-dark/15 hover:border-sage rounded-2xl p-6 md:p-8 bg-warm-white/85 backdrop-blur-md transition-all duration-500 cursor-pointer shadow-sm hover:shadow-lg">
+                            <div class="flex justify-between items-center mb-6">
+                                <span class="w-2 h-2 rounded-full bg-sage/60 group-hover:bg-sage"></span>
+                            </div>
+                            <h4 class="font-serif text-2xl tracking-wider text-warm-dark mb-3"><span class="letter-swap" data-hover="Communicate">Communicate</span></h4>
+                            <p class="font-sans text-sm md:text-base text-warm-dark/70 font-light leading-relaxed group-hover:text-warm-dark transition-colors duration-300">
+                                I believe clarity is a form of respect. Good communication starts with understanding.
+                            </p>
+                        </div>
+
+                        <div class="group border border-warm-dark/15 hover:border-sage rounded-2xl p-6 md:p-8 bg-warm-white/85 backdrop-blur-md transition-all duration-500 cursor-pointer shadow-sm hover:shadow-lg">
+                            <div class="flex justify-between items-center mb-6">
+                                <span class="w-2 h-2 rounded-full bg-sage/60 group-hover:bg-sage"></span>
+                            </div>
+                            <h4 class="font-serif text-2xl tracking-wider text-warm-dark mb-3"><span class="letter-swap" data-hover="Create">Create</span></h4>
+                            <p class="font-sans text-sm md:text-base text-warm-dark/70 font-light leading-relaxed group-hover:text-warm-dark transition-colors duration-300">
+                                I turn observations into ideas, and ideas into something tangible.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- EXPLORE PAGE -->
+        <section id="explore" class="py-32 bg-warm-hover/30 px-6 lg:px-16 border-t border-warm-dark/5 relative">
+            <div class="max-w-6xl mx-auto">
+                <h3 class="font-serif text-5xl sm:text-7xl text-warm-dark font-light mb-16 select-none tracking-tight">Explore My World</h3>
+                <div class="gooey-filter-container flex flex-col divide-y divide-warm-dark/10 border-t border-b border-warm-dark/15">
+                    <a href="#words" class="gooey-link py-10 group" data-gooey-text="WORDS">
+                        <div class="gooey-bg-blob"></div>
+                        <div class="gooey-text-wrapper font-serif text-5xl sm:text-7xl md:text-8xl tracking-wider font-light">
+                            <span class="font-serif text-lg md:text-2xl text-sage font-normal mr-4">01 /</span>
+                            <div class="gooey-chars-container inline-flex"></div>
+                            <span class="gooey-arrow text-3xl sm:text-5xl"><i class="fa-solid fa-arrow-right-long"></i></span>
+                        </div>
+                    </a>
+                    <a href="#works" class="gooey-link py-10 group" data-gooey-text="WORKS">
+                        <div class="gooey-bg-blob"></div>
+                        <div class="gooey-text-wrapper font-serif text-5xl sm:text-7xl md:text-8xl tracking-wider font-light">
+                            <span class="font-serif text-lg md:text-2xl text-sage font-normal mr-4">02 /</span>
+                            <div class="gooey-chars-container inline-flex"></div>
+                            <span class="gooey-arrow text-3xl sm:text-5xl"><i class="fa-solid fa-arrow-right-long"></i></span>
+                        </div>
+                    </a>
+                    <a href="#contact" class="gooey-link py-10 group" data-gooey-text="CONTACT">
+                        <div class="gooey-bg-blob"></div>
+                        <div class="gooey-text-wrapper font-serif text-5xl sm:text-7xl md:text-8xl tracking-wider font-light">
+                            <span class="font-serif text-lg md:text-2xl text-sage font-normal mr-4">03 /</span>
+                            <div class="gooey-chars-container inline-flex"></div>
+                            <span class="gooey-arrow text-3xl sm:text-5xl"><i class="fa-solid fa-arrow-right-long"></i></span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- WORDS SECTION (SINGLE CARD LAYOUT) -->
+        <section id="words" class="py-32 px-6 lg:px-16 border-t border-warm-dark/5 relative overflow-hidden bg-warm-white" style="width: 100%; min-height: 600px;">
+            <div class="absolute inset-0 z-0 pointer-events-auto">
+                <div id="words-lightfall-container" class="w-full h-full"></div>
+            </div>
+            <div class="max-w-7xl mx-auto relative z-10 pointer-events-none">
+                <div class="flex justify-between items-end mb-16">
+                    <div>
+                        <div class="flex items-center gap-3 mb-6">
+                            <span class="h-[1px] w-8 bg-sage"></span>
+                            <h2 class="font-serif text-3xl text-sage uppercase tracking-widest">WORDS</h2>
+                        </div>
+                        <h3 class="font-chinese text-4xl font-semibold text-warm-dark tracking-wide">数字随笔</h3>
+                    </div>
+                    <div class="hidden sm:block">
+                        <span class="font-serif italic text-warm-gray text-lg">“Writing to seek clarity.”</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center pointer-events-auto">
+                    <!-- Left Column: Intro Text with Glass Effect -->
+                    <div class="lg:col-span-6 space-y-6 p-6 md:p-8 rounded-3xl border border-warm-dark/10 shadow-lg" style="background: rgba(255,255,255,0.65); backdrop-filter: blur(20px);">
+                        <h4 class="font-chinese text-2xl md:text-3xl font-medium text-warm-dark leading-snug">文字是我理解世界的一种方式。</h4>
+                        <p class="font-chinese text-base md:text-lg text-warm-dark/90 font-light leading-relaxed">这里记录阅读、文学研究与个人思考的痕迹。通过文字，我尝试连接不同文化、观察人与世界之间的关系，也留下那些值得被重新审视的瞬间。</p>
+                        <div class="pt-4 flex items-center gap-3 text-sage">
+                            <i class="fa-solid fa-feather-pointed"></i>
+                            <span class="font-serif text-sm tracking-widest uppercase">Sage's Reading & Writing Notes</span>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Single Article Entry Card -->
+                    <div class="lg:col-span-6 flex justify-center">
+                        <div id="open-article-btn" class="w-full max-w-md p-8 md:p-10 rounded-3xl border border-warm-dark/10 shadow-xl cursor-pointer hover:border-sage transition-all duration-500 group relative overflow-hidden" style="background: rgba(253,251,247,0.92); backdrop-filter: blur(16px);">
+                            <div class="absolute top-0 right-0 p-6 text-sage/20 group-hover:text-sage/40 transition-colors text-6xl">
+                                <i class="fa-solid fa-feather-pointed"></i>
+                            </div>
+
+                            <div class="flex items-center gap-2 font-serif text-xs uppercase tracking-widest text-sage mb-4 font-semibold">
+                                <span>ESSAY PAPER</span>
+                                <span>•</span>
+                                <span>2026.6.24</span>
+                            </div>
+
+                            <h4 class="font-chinese text-2xl md:text-3xl font-semibold text-warm-dark mb-4 leading-snug group-hover:text-sage transition-colors">
+                                现代性牢笼与生存循环——论池莉《烦恼人生》中的时空闭锁
+                            </h4>
+
+                            <p class="font-chinese text-sm md:text-base text-warm-dark/75 leading-relaxed font-light line-clamp-3 mb-8">
+                                本篇论文基于空间诗学与现代性批判理论，对池莉新写实主义代表作《烦恼人生》进行了谱系式的文本细读...
+                            </p>
+
+                            <div class="flex justify-between items-center pt-4 border-t border-warm-dark/10 font-serif text-xs text-sage tracking-widest uppercase font-semibold">
+                                <span>READ FULL ESSAY / 阅读全文</span>
+                                <i class="fa-solid fa-arrow-right transform group-hover:translate-x-2 transition-transform duration-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- WORKS SECTION -->
+        <section id="works" class="py-32 px-6 lg:px-16 bg-warm-hover/20 border-t border-warm-dark/5 relative">
+            <div class="max-w-7xl mx-auto">
+                <div class="flex justify-between items-end mb-20">
+                    <div>
+                        <div class="flex items-center gap-3 mb-6">
+                            <span class="h-[1px] w-8 bg-sage"></span>
+                            <h2 class="font-serif text-3xl text-sage uppercase tracking-widest">WORKS</h2>
+                        </div>
+                        <h3 class="font-chinese text-4xl font-semibold text-warm-dark tracking-wide">实践档案</h3>
+                    </div>
+                    <div class="hidden sm:block">
+                        <span class="font-serif italic text-warm-gray text-lg">“Ideas put into solid form.”</span>
+                    </div>
+                </div>
+
+                <div class="space-y-32">
+                    <!-- Project 01: Merchants Bank -->
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start border-t border-warm-dark/10 pt-16 reveal-element">
+                        <div class="lg:col-span-4 space-y-6">
+                            <div class="flex items-center gap-2">
+                                <span class="font-serif text-lg text-sage font-semibold">01 /</span>
+                                <span class="font-serif text-sm text-warm-gray tracking-widest uppercase">FINANCIAL PUBLICITY</span>
+                            </div>
+                            <h4 class="font-chinese text-3xl font-semibold text-warm-dark">招商银行温州分行</h4>
+                            <div class="flex flex-wrap gap-2 pt-2">
+                                <span class="font-chinese text-xs bg-warm-white text-sage-dark py-1 px-3 rounded-full border border-sage/10">内容策划</span>
+                                <span class="font-chinese text-xs bg-warm-white text-sage-dark py-1 px-3 rounded-full border border-sage/10">商业表达</span>
+                                <span class="font-chinese text-xs bg-warm-white text-sage-dark py-1 px-3 rounded-full border border-sage/10">信息整理</span>
+                                <span class="font-chinese text-xs bg-warm-white text-sage-dark py-1 px-3 rounded-full border border-sage/10">案例分析</span>
+                                <span class="font-chinese text-xs bg-warm-white text-sage-dark py-1 px-3 rounded-full border border-sage/10">商业 PPT</span>
+                            </div>
+                            <p class="font-chinese text-base text-warm-gray font-light leading-relaxed">
+                                招商银行温州分行战略宣导室实习生项目。结合汉语言专业的严谨逻辑，打通商业诉求与公众表达的鸿沟。
+                            </p>
+                        </div>
+
+                        <div class="lg:col-span-8 bg-warm-white p-8 md:p-12 rounded-3xl border border-warm-dark/5 shadow-sm space-y-10 font-chinese font-light">
+                            <div>
+                                <p class="text-base text-warm-dark/80 leading-loose">
+                                    在战略宣导室实习期间，我参与的是连接业务、内容与传播的工作。团队不仅需要完成内部宣传，更需要将复杂的业务信息转化为能够服务客户、支持业务决策的内容。因此，每一次内容输出都不仅仅是”完成一份材料”，而是一次信息梳理与价值传递的过程。<br><br>
+                                    我的工作涵盖行业案例研究、客户需求分析、商业化方案包装、汇报材料制作以及运营支持等多个环节。从前期收集资料、分析行业动态，到梳理内容逻辑、优化信息结构，再到完成 PPT 的视觉呈现与细节调整，我逐渐参与了完整的内容生产流程。同时，在多个项目并行推进的过程中，我也需要根据不同客户和业务场景快速调整内容重点，与团队保持高效沟通，确保每项工作能够按时、高质量完成。
+                                </p>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 pt-8 border-t border-warm-dark/5">
+                                <div>
+                                    <h5 class="text-xs font-serif uppercase tracking-widest text-sage mb-4 font-semibold">What I Did</h5>
+                                    <ul class="space-y-3 text-base text-warm-dark/80 leading-relaxed">
+                                        <li class="flex items-start gap-2"><span class="text-sage mt-1">·</span>梳理行业案例与客户需求，完成商业案例研究与内容整合。</li>
+                                        <li class="flex items-start gap-2"><span class="text-sage mt-1">·</span>参与商业化方案包装及 PPT 制作，提升内容呈现的专业性与逻辑性。</li>
+                                        <li class="flex items-start gap-2"><span class="text-sage mt-1">·</span>协助客户沟通与运营支持，根据不同场景快速调整表达方式。</li>
+                                        <li class="flex items-start gap-2"><span class="text-sage mt-1">·</span>在多个项目并行推进过程中，协调任务优先级，确保内容按时交付。</li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    <h5 class="text-xs font-serif uppercase tracking-widest text-sage mb-4 font-semibold">What I Learned</h5>
+                                    <p class="text-base text-warm-dark/70 leading-relaxed">
+                                        这段经历最大的收获，不是学会制作 PPT，而是学会了如何站在受众的角度思考。<br><br>
+                                        面对同一份信息，不同对象关注的重点并不相同。我开始尝试从”别人需要什么”出发，重新组织内容、调整表达方式，让信息更容易被理解，也更有说服力。这种思考方式后来也延续到了我的学习和创作中。
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Project 02: Street Dance Club -->
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start border-t border-warm-dark/10 pt-16 reveal-element">
+                        <div class="lg:col-span-4 space-y-6">
+                            <div class="flex items-center gap-2">
+                                <span class="font-serif text-lg text-sage font-semibold">02 /</span>
+                                <span class="font-serif text-sm text-warm-gray tracking-widest uppercase">BRAND OPERATIONS</span>
+                            </div>
+                            <h4 class="font-chinese text-3xl font-semibold text-warm-dark">街舞社品牌运营与策划</h4>
+                            <div class="flex flex-wrap gap-2 pt-2">
+                                <span class="font-chinese text-xs bg-warm-white text-sage-dark py-1 px-3 rounded-full border border-sage/10">品牌传播</span>
+                                <span class="font-chinese text-xs bg-warm-white text-sage-dark py-1 px-3 rounded-full border border-sage/10">活动策划</span>
+                                <span class="font-chinese text-xs bg-warm-white text-sage-dark py-1 px-3 rounded-full border border-sage/10">社群运营</span>
+                                <span class="font-chinese text-xs bg-warm-white text-sage-dark py-1 px-3 rounded-full border border-sage/10">现场执行</span>
+                            </div>
+                            <p class="font-chinese text-base text-warm-gray font-light leading-relaxed">将个人热爱转为强大的组织执行力，重构校园小众社群传播机制，在律动中释放组织力。</p>
+                        </div>
+                        
+                        <div class="lg:col-span-8 bg-warm-white p-8 md:p-12 rounded-3xl border border-warm-dark/5 shadow-sm space-y-10 font-chinese font-light">
+                            <div>
+                                <p class="text-base text-warm-dark/80 leading-loose">
+                                    这是我第一次真正负责一个校园品牌的内容运营与活动策划。从线上内容传播到线下活动执行，我开始思考如何通过内容建立社团形象，并吸引更多人参与其中。<br><br>
+                                    我负责社团的新媒体运营、活动策划以及品牌内容建设，希望每一次宣传都能保持统一的视觉风格与表达方式。在策划大型 “Random Dance” 活动时，我参与了从前期筹备到现场执行的全过程，也逐渐学会在有限时间内协调团队、整合资源，并根据现场情况及时调整安排。<br><br>
+                                    相比完成一次活动，我更享受的是不断优化细节的过程——如何让宣传更有吸引力、流程更流畅、参与者拥有更好的体验。这段经历让我第一次感受到，一个成功的项目离不开内容、执行与团队协作之间的平衡。
+                                </p>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 pt-8 border-t border-warm-dark/5">
+                                <div>
+                                    <h5 class="text-xs font-serif uppercase tracking-widest text-sage mb-4 font-semibold">What I Did</h5>
+                                    <ul class="space-y-3 text-base text-warm-dark/80 leading-relaxed">
+                                        <li class="flex items-start gap-2"><span class="text-sage mt-1">·</span>负责社团品牌运营及校园活动策划，制定线上线下宣传方案。</li>
+                                        <li class="flex items-start gap-2"><span class="text-sage mt-1">·</span>策划并制作微信公众号、短视频等宣传内容，提升校园曝光与互动。</li>
+                                        <li class="flex items-start gap-2"><span class="text-sage mt-1">·</span>统筹 “Random Dance” 活动流程，包括宣传推广、现场协调及人员安排。</li>
+                                        <li class="flex items-start gap-2"><span class="text-sage mt-1">·</span>与团队共同推进活动执行，确保各环节顺利落地，并根据现场情况及时调整。</li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    <h5 class="text-xs font-serif uppercase tracking-widest text-sage mb-4 font-semibold">What I Learned</h5>
+                                    <p class="text-base text-warm-dark/70 leading-relaxed">
+                                        这段经历让我意识到，内容运营不仅仅是发布信息，更是在建立人与品牌之间的连接。一次成功的活动，离不开前期规划、团队协作以及对细节的持续优化。我开始学会从参与者的角度思考问题，也更加理解沟通和组织能力对于项目的重要性。
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Project 03: Campus Publicity -->
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start border-t border-warm-dark/10 pt-16 reveal-element">
+                        <div class="lg:col-span-4 space-y-6">
+                            <div class="flex items-center gap-2">
+                                <span class="font-serif text-lg text-sage font-semibold">03 /</span>
+                                <span class="font-serif text-sm text-warm-gray tracking-widest uppercase">CAMPUS PUBLICITY</span>
+                            </div>
+                            <h4 class="font-chinese text-3xl font-semibold text-warm-dark">学院文化部公众号运营</h4>
+                            
+                            <div class="flex flex-wrap gap-2 pt-2">
+                                <span class="font-chinese text-xs bg-warm-white text-sage-dark py-1 px-3 rounded-full border border-sage/10">公众号运营</span>
+                                <span class="font-chinese text-xs bg-warm-white text-sage-dark py-1 px-3 rounded-full border border-sage/10">校园传播</span>
+                                <span class="font-chinese text-xs bg-warm-white text-sage-dark py-1 px-3 rounded-full border border-sage/10">活动策划</span>
+                                <span class="font-chinese text-xs bg-warm-white text-sage-dark py-1 px-3 rounded-full border border-sage/10">内容输出</span>
+                            </div>
+
+                            <p class="font-chinese text-base text-warm-gray font-light leading-relaxed">
+                                人文社科学部文化部核心骨干，负责官方公众号与校园多渠道文化宣传，以深度文字促成高粘度校园交互。
+                            </p>
+                        </div>
+
+                        <div class="lg:col-span-8 bg-warm-white p-8 md:p-12 rounded-3xl border border-warm-dark/5 shadow-sm space-y-10 font-chinese font-light">
+                            <div>
+                                <div class="font-serif text-xs uppercase tracking-widest text-sage mb-3 font-semibold">New Media Department · 2023.09 — 2024.09</div>
+                                <p class="text-base text-warm-dark/80 leading-loose">
+                                    加入学院文化部后，我开始参与校园官方新媒体运营及大型活动策划。这是我第一次接触到较为完整的内容生产流程，也让我逐渐理解，一条内容从策划到发布，背后需要经历怎样的协作与执行。<br><br>
+                                    除了日常的新媒体内容运营，我还参与学院多项大型校园活动的策划与现场执行，包括校园青年歌手大赛等重点项目。从前期准备、宣传设计到现场协调，我逐渐建立起对项目整体流程的认识，也提升了在团队合作中的沟通效率与执行能力。<br><br>
+                                    这段经历让我意识到，优秀的内容不仅需要创意，更需要稳定、高效的执行能力，而真正让项目顺利推进的，往往是那些容易被忽略的细节。
+                                </p>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 pt-8 border-t border-warm-dark/5">
+                                <div>
+                                    <h5 class="text-xs font-serif uppercase tracking-widest text-sage mb-4 font-semibold">What I Did</h5>
+                                    <ul class="space-y-3 text-base text-warm-dark/80 leading-relaxed">
+                                        <li class="flex items-start gap-2"><span class="text-sage mt-1">·</span>参与学院微信公众号及短视频平台的内容策划、编辑与发布。</li>
+                                        <li class="flex items-start gap-2"><span class="text-sage mt-1">·</span>负责校园文化活动宣传支持，包括文案撰写、素材整理及内容优化。</li>
+                                        <li class="flex items-start gap-2"><span class="text-sage mt-1">·</span>协助校园青年歌手大赛等大型活动的策划、流程执行及现场协调。</li>
+                                        <li class="flex items-start gap-2"><span class="text-sage mt-1">·</span>与不同部门协作完成活动组织、人流引导及现场秩序维护等工作。</li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    <h5 class="text-xs font-serif uppercase tracking-widest text-sage mb-4 font-semibold">What I Learned</h5>
+                                    <p class="text-base text-warm-dark/70 leading-relaxed">
+                                        这段经历让我学会站在整体项目的角度思考，而不仅仅关注自己负责的部分。面对多人协作和复杂流程，我逐渐养成了提前规划、主动沟通和关注细节的工作习惯，也更加理解内容传播与团队协作之间密不可分的关系。
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CONTACT SECTION -->
+        <section id="contact" class="py-36 px-6 lg:px-16 bg-warm-white border-t border-warm-dark/5 relative">
+            <div class="max-w-5xl mx-auto text-center space-y-16">
+                <h2 class="font-serif text-5xl sm:text-6xl md:text-7xl text-warm-dark font-light tracking-wide">
+                    <span class="letter-swap" data-hover="Let's Talk.">Let's Talk.</span>
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-3xl mx-auto pt-8">
+                    <div class="p-6 rounded-2xl bg-warm-hover/30 border border-warm-dark/5 hover:border-sage transition-all duration-300">
+                        <span class="font-serif text-xs text-sage tracking-widest uppercase font-semibold block mb-2">EMAIL</span>
+                        <a href="mailto:tree9195@163.com" class="font-serif text-lg text-warm-dark hover:text-sage transition-colors">tree9195@163.com</a>
+                    </div>
+                    <div class="p-6 rounded-2xl bg-warm-hover/30 border border-warm-dark/5 hover:border-sage transition-all duration-300">
+                        <span class="font-serif text-xs text-sage tracking-widest uppercase font-semibold block mb-2">PHONE</span>
+                        <a href="tel:+8613979108929" class="font-serif text-lg text-warm-dark hover:text-sage transition-colors">+86 13979108929</a>
+                    </div>
+                    <div class="p-6 rounded-2xl bg-warm-hover/30 border border-warm-dark/5 hover:border-sage transition-all duration-300">
+                        <span class="font-serif text-xs text-sage tracking-widest uppercase font-semibold block mb-2">WECHAT</span>
+                        <span class="font-serif text-lg text-warm-dark select-all">sagetree7</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- INDIVIDUAL ARTICLE VIEW (HIDDEN BY DEFAULT) -->
+    <div id="article-view" class="fixed inset-0 z-50 bg-warm-white overflow-y-auto hidden opacity-0 translate-y-8">
+        <div class="min-h-screen pt-28 pb-24 px-6 lg:px-16 relative">
+            <!-- Smooth Return Button -->
+            <div class="max-w-4xl mx-auto mb-12">
+                <button id="close-article-btn" class="inline-flex items-center gap-3 px-5 py-2.5 rounded-full bg-warm-white/90 border border-warm-dark/10 shadow-sm hover:border-sage hover:text-sage transition-all duration-300 backdrop-blur-md font-serif text-sm tracking-widest text-warm-dark cursor-pointer group">
+                    <i class="fa-solid fa-arrow-left-long group-hover:-translate-x-1 transition-transform"></i>
+                    <span>RETURN TO DIGITAL NOTES</span>
+                </button>
+            </div>
+
+            <div class="max-w-3xl mx-auto">
+                <!-- Header -->
+                <header class="mb-14 pb-10 border-b border-warm-dark/10">
+                    <div class="flex flex-wrap items-center gap-3 text-xs font-serif text-sage tracking-widest uppercase mb-6">
+                        <span>Sage's Academic Essay</span>
+                        <span>•</span>
+                        <span>2026.6.24</span>
+                        <span>•</span>
+                        <span>12 MIN READ</span>
+                    </div>
+
+                    <h1 class="font-chinese text-3xl md:text-5xl font-semibold text-warm-dark leading-tight md:leading-snug mb-8 tracking-tight">
+                        现代性牢笼与生存循环——论池莉《烦恼人生》中的时空闭锁
+                    </h1>
+
+                    <div class="flex flex-wrap gap-2 mb-10">
+                        <span class="font-chinese text-xs bg-sage/10 text-sage-dark py-1 px-3 rounded-full border border-sage/15">#池莉</span>
+                        <span class="font-chinese text-xs bg-sage/10 text-sage-dark py-1 px-3 rounded-full border border-sage/15">#《烦恼人生》</span>
+                        <span class="font-chinese text-xs bg-sage/10 text-sage-dark py-1 px-3 rounded-full border border-sage/15">#新写实主义</span>
+                        <span class="font-chinese text-xs bg-sage/10 text-sage-dark py-1 px-3 rounded-full border border-sage/15">#时空闭锁</span>
+                        <span class="font-chinese text-xs bg-sage/10 text-sage-dark py-1 px-3 rounded-full border border-sage/15">#体制规训</span>
+                        <span class="font-chinese text-xs bg-sage/10 text-sage-dark py-1 px-3 rounded-full border border-sage/15">#异化</span>
+                    </div>
+
+                    <!-- Abstract Box -->
+                    <div class="p-6 md:p-8 rounded-3xl bg-warm-hover/40 border border-warm-dark/10 shadow-sm space-y-4">
+                        <div class="flex items-center gap-2 font-serif text-xs uppercase tracking-widest text-sage font-semibold">
+                            <i class="fa-solid fa-bookmark"></i>
+                            <span>ABSTRACT / 摘要</span>
+                        </div>
+                        <p class="font-chinese text-sm md:text-base text-warm-dark/85 leading-relaxed font-light">
+                            本篇论文基于空间诗学与现代性批判理论，对池莉新写实主义代表作《烦恼人生》进行了谱系式的文本细读。论文拒绝流于经验式的主观抒情与庸俗社会学描摹，严格遵循“论点先行”的学术范式，深入剖析了小说中空间表征与时间结构对个体生存状态的重构与规训。研究表明，小说通过“公共交通的物理封闭”、“工厂与办公室的体制规训”、“家庭蜗居的方寸化与噪音化”三重空间递进，层层剥离了主人公印家厚的独立主体尊严与伦理身份，将其降维为现代都市机器中的“肉体零件”与受刑客体；同时，结合古典“三一律”式的一日叙事结构，文本构建出一种无法逃脱的“圆形时间闭环”。研究认为，《烦恼人生》中的物理闭锁与时间循环构成了同构关系，共同确立了一个坚不可摧的“庸常牢笼”，深刻揭示了转型期城市底层个体在现代性大潮中无形损耗、缺乏形而上救赎可能的存在主义生存困境。
+                        </p>
+                    </div>
+                </header>
+
+                <!-- Article Full Content -->
+                <main className="font-chinese space-y-6 text-base md:text-lg text-warm-dark/90 leading-loose font-light">
+                    <p>在现代文学批评的谱系中，空间的表征方式直接参与个体经验的建构与社会秩序的隐喻。加斯东·巴什拉在《空间诗学》中指出，空间不仅是几何学的物理容器，更是人类意识、情感与存在状态的寄托所[2]。然而，在池莉新写实主义的代表作[1]中，空间的温情与诗意被彻底剥离，转化为一种冰冷、黏稠、密不透风的“物理牢笼”。长久以来，传统的文学考量多集中于作品对世俗生活的客观复原，或对“一地鸡毛”式凡俗琐事的感性叹惋[6]。这种阐释路径极易将严肃的文学评论降格为流于主观抒情与经验堆砌的“读后感”。</p>
+
+                    <p>新写实主义的核心价值恰恰在于其冷峻的“剥离感”。它由剥离宏大叙事与非理性的浪漫幻想，将审视的视线聚焦于现代城市运行机器对平凡个体的深度异化[8]。在这种创作视野下，叙事并非停留在对生活琐碎现象的感性描摹，而是深入到底层生存的肌理之中将那些看似微不足道的日常阵痛，转化为对现代性困境与体制化规训的冷峻剖析。</p>
+
+                    <p>因此，本篇评论拒绝流于对主人公遭遇的主观同情，而是严格遵循“论点先行”的学术原则，选取空间的物理封闭性、社会与伦理身份的悬置规训以及生存重负的圆形循环作为核心关键贯穿全文。本文旨在通过精准、谱系式的文本细读证明：小说中严密受限的物理空间，不仅直接压迫着人物的肉体，更深层地实现了对个体社会身份的剥夺与规训，最终在圆形时间的绞杀下，将生存简化为一场毫无形而上救赎可能的、西西弗斯式的循环。</p>
+
+                    <h3 class="font-chinese text-2xl font-semibold text-warm-dark mt-12 mb-6 tracking-wide border-l-2 border-sage pl-4">（一）移动的钢铁容器：公共交通的“物理封闭”与社会身份的初级“悬置”</h3>
+
+                    <p>在《烦恼人生》的整体叙事架构中，池莉将大量篇幅置于主人公印家厚由“家庭私人空间”向“工厂公共空间”过渡的中间地带。这一地带并非具备现代启蒙意义上的“自由过渡期”，而是高度外在于个体意志、由公共交通工具所构成的移动物理容器。文本在开篇便通过高密度的动作描写与精确的时间数字，确立了外部公共空间对个体的技术化控制与物理化围剿：</p>
+
+                    <blockquote class="my-6 p-5 pl-6 bg-warm-hover/40 rounded-2xl border-l-4 border-sage italic font-light">
+                        “印家厚一个惊悸，醒了，全身绷得硬直……去迟了就赶不上六点半的那班轮渡。赶不上轮渡才不会迟到。而坐轮渡之前还要乘四站公共汽车。”
+                    </blockquote>
+
+                    <p>这种由“公共汽车”与“轮渡”构成的多重套叠式空间，构成了现代城市对底层劳动者肉体施加的第一重“物理封闭”。在高度挤压的封闭空间内，现代性话语中所谓的个体独立性与主体尊严被彻底物化、格式化。印家厚的社会身份在这些移动的“铁匣子”中遭遇了强制性的“悬置”。当空间的物理封闭直接导致社会身份失效时，个体便被迫退化为纯粹的、无差异的生存符号：</p>
+
+                    <blockquote class="my-6 p-5 pl-6 bg-warm-hover/40 rounded-2xl border-l-4 border-sage italic font-light">
+                        “公共汽车来了。人多得像泄洪。印家厚在人群后面，运足气，伸展双臂，发疯般往前推……他终于挤上了车，肚皮死死贴在车门铁板上，背脊被后面的人坚硬的胸脯顶着。在这一刻，没有人承认他是厂里技术拔尖的八级钳工，也没有人尊重他作为一个父亲和丈夫的体面。在这个由于极度拥挤而导致空气稀薄的移动牢笼里，他彻底失去了自主行动的可能，仅仅作为一具‘肉体零件’，被动地随着车身的颠簸而颤动。”
+                    </blockquote>
+
+                    <p>在此处的文本细读中，我们可以发现池莉的笔触并非流于对车厢拥挤的日常生活素描，而是借由肉体痛苦（“肚皮死死贴在车门铁板上”）来外化现代城市体制对个体的暴力异化[8]。公共汽车与轮渡作为高度体制化的现代工业产物，其本质是一个将流动人口进行规训与运输的物理容器[4]。在这一密闭容器中，所有乘客的阶层、学识、道德及家庭角色均被剥离，留下的只有对空间的绝对争夺与对秩序的被动顺从。印家厚为了免于“迟到”这一现代工厂体制的严厉惩罚，必须将自身重组为该交通工具内部的一粒“肉质螺丝丁”。这种物理封闭所带来的社会身份悬置，揭示了底层知识分子与工人阶层在现代都市运行机器面前的绝对无能。个体的生命意志在清晨的第一缕阳光下便遭遇了毁灭性的降维打击，其身份不再具备自主能动性，而是呈现出一种被空间体制化圈禁的“悬置状态”。</p>
+
+                    <p>进一步挖掘这一“中间地带”的过渡逻辑，可以发现江面上的轮渡在文本中呈现出更为深邃的异化图景。长江作为自然意象，本应提供开阔的视野与流动感，但在新写实主义的冷峻注视下，轮渡甲板演变成了另一个平面化的权力格栅[7]：</p>
+
+                    <blockquote class="my-6 p-5 pl-6 bg-warm-hover/40 rounded-2xl border-l-4 border-sage italic font-light">
+                        “轮渡的马达沉重地轰鸣着，吐出黑烟。甲板上黑压压一片全是人头，江风吹过来，非但吹不散人群中的汗臭和廉价香烟味，反而将这些气味搅拌得更加黏稠。印家厚被卡在两具高大的肉体之间，江水在甲板下拍击，他却觉得自己像是坐在一口正在熬煮的肉锅里。”
+                    </blockquote>
+
+                    <p>这里的自然空间（大江、江风）被体制空间（轮渡甲板）彻底吞噬。自然不再具备净化人类精神的功能，反而反衬出物理封闭对人性的极致压迫。印家厚在轮渡上的生存状态，是一种丧失了空间坐标的中介状态——他既离开了家庭的伦理羁绊，又尚未进入工厂的生产序列，然而正是在这种理论上最具自由可能的间隙里，个体的肉体却遭遇了最密集的物理禁锢。这有力地证明了，在现代城市文明的秩序网格中，不存在任何外在于体制规训的“真空地带”。</p>
+
+                    <h3 class="font-chinese text-2xl font-semibold text-warm-dark mt-12 mb-6 tracking-wide border-l-2 border-sage pl-4">（二）权力网格的嵌合：工厂与办公室空间的“体制规训”与情感异化</h3>
+
+                    <p>当印家厚艰难穿越交通工具的肉体围剿、抵达工厂公共空间时，物理空间的封闭性并未如预期般消解，而是转化为一种由科层制管理秩序、冰冷人际关系与工厂政治规训共同构成的“软性封闭场域”。工厂车间与办公室不仅是劳动力再生产的物理场所，更是一个充满监视与权力渗透的微观政治空间：</p>
+
+                    <blockquote class="my-6 p-5 pl-6 bg-warm-hover/40 rounded-2xl border-l-4 border-sage italic font-light">
+                        “车间里机器轰鸣，马达声震耳欲聋。印家厚站在他的八级钳工车床前，四周是冰冷的铁屑、机油的气味和无处不在的规章制度……厂部机关的办公室则显得安静而冷漠，几张办公桌、几把椅子、一叠叠报纸和表格，将空间切割成一个个独立的、不容侵犯的权力网格。团委书记的谈话、同事们冷眼旁观的目光，在这方寸之地内形成了一股巨大的、无形的精神威压。”
+                    </blockquote>
+
+                    <p>在这种权力场域的内部，印家厚的身份驯化过程得到了进一步的深化。车间与办公室的物理边界不仅限制了其身体的延展，更通过科层制度对他的“工人身份”实施了精密的规训[4]。特别是在面对昔日带有强烈情感羁绊的女性（陈秀子）这一特定叙事线索时，这种体制空间的狭隘感与个体精神的困顿感构成了完美的同构：</p>
+
+                    <blockquote class="my-6 p-5 pl-6 bg-warm-hover/40 rounded-2xl border-l-4 border-sage italic font-light">
+                        “陈秀子站在办公室的角落里，两人之间的物理距离不过三步。在如此窄小的、被几张灰色办公桌和红头文件所包围的空间里，每一次目光的对视、每一次刻意的回避，都显得惊心动魄而又令人窒息。空气中流动着一种带有禁忌色彩的危险气息。印家厚必须时时刻刻调整自己的站姿、眼神与语气，以防逾越那条由模范工人、本分丈夫所构成的社会道德红线。办公室的四个墙角仿佛变成了四具冰冷的监视器，将他的情感表达死死扼杀在萌芽状态。”
+                    </blockquote>
+
+                    <p>此处的文本表述深刻表征了公共体制对个体私人情感空间的极限挤压。在《烦恼人生》这一特定的叙事框架内，办公室不再是一个提供职场协作的中立空间，而是演变为一个道德审判与社会身份规训的拟态监狱。印家厚作为“情感主体”的合理诉求（对青春逝去的留恋、对浪漫情感的压抑渴望），在此处狭小且制度化的公共空间中被无情地判定为一种“异端”与“违规”。</p>
+
+                    <p>深入透视工厂车间的空间排布，八级钳工的车床在文本中不仅是印家厚安身立命的工具，更是一个精密的“肉体定位装置”。池莉通过对车间物理环境的细致勾勒，展示了现代大工业如何通过空间布局实现对劳动者的深度异化[8]：</p>
+
+                    <blockquote class="my-6 p-5 pl-6 bg-warm-hover/40 rounded-2xl border-l-4 border-sage italic font-light">
+                        “那台巨大的车床像一头钢铁怪兽，占据了印家厚视线的绝大部分。他每天必须在这个固定的、不足两平方米的作业面上站立数个小时，手上的动作必须精准到毫米。冰冷的切削液不断浇注在旋转的金属上，发出刺耳的嘶叫。在这个空间里，他的听觉被马达声强占，他的视觉被铁屑充斥，他的身体被束缚在运转的轴承旁。技术在这一刻不是他的解放者，而是将他死死钉在生产线上的隐形锁链。”
+                    </blockquote>
+
+                    <p>这里的车床空间与前述的公共汽车车厢达成了某种结构上的互文。在车厢里，他是无差异的运输客体；在车床前，他是标准化的生产主体。两者的共同点在于，个体的空间自主权被彻底剥夺。车间的物理轰鸣声构成了一种暴力的语境，它阻断了工人之间进行真正的、具备主体性交流的可能。即便是在茶歇或午饭时间，车间长廊和食堂的逼仄同样无法提供精神的容留所。这种空间上的逼仄，直接折射出转型期中国都市社会中，由组织管理、社会舆论及传统伦理共同构成的、无缝不入的控制网络。主人公无法在公共空间内寻得任何可以安置自身独立精神主体的“缝隙”，他的每一次呼吸与退让，都是对既定身份秩序的被动强化。</p>
+
+                    <h3 class="font-chinese text-2xl font-semibold text-warm-dark mt-12 mb-6 tracking-wide border-l-2 border-sage pl-4">（三）私人场域的瓦解：偏房与床第空间的“方寸化”与伦理“受刑”</h3>
+
+                    <p>如果说公共空间（轮渡、工厂、办公室）对主人公的围剿展现了现代社会外部体制的规训力量，那么小说的私人空间——印家厚那仅有十几平方米、由木板壁强行隔开的狭小蜗居，则彻底解构了传统文学中“家”作为精神避风港的古典神话。在池莉笔下，这一本应承载私密性、温情与精神救赎的家庭空间，呈现出一种极端的、让人窒息的“方寸化”与“噪音化”特征：</p>
+
+                    <blockquote class="my-6 p-5 pl-6 bg-warm-hover/40 rounded-2xl border-l-4 border-sage italic font-light">
+                        “他们一家三口长期挤在一间‘猪狗窝’……家，不过是那一间由板壁隔开的十几平方米的偏房。屋里最庞大的存在就是那张床，几乎占据了房间的三分之二。印家厚和妻子、儿子就挤在这张床上。早晨醒来，妻子的脚指头可能正顶着他的下巴，儿子的佯尿已经湿透了半边褥子。在这个空间里，连翻个身都需要精确的计算，任何一丝关于夫妻恩爱的浪漫幻想，都在倒马桶的撞击声和炉子的浓烟中化为乌有。”
+                    </blockquote>
+
+                    <p>在这段充满物质匮乏感与肉体尴尬感的粗粝描写中，池莉以近乎解剖学式的冷峻笔触，揭示了底层城市居民最真实、最本质的生存真相：当私人空间的物理边界被压缩至生存极限时，伦理秩序、夫妻情感与个体尊严将不可避免地发生严重的变形、过载与异化。</p>
+
+                    <p>床在这个十几平方米的空间里，不再是隐秘情感与夫妻繁衍的私密圣地，而是异化为一个暴露无遗的、高度劳作化的物理平面。印家厚在这张床上无法获得片刻的松弛：他的上方是妻子因为长期忍受物质匮乏而发出的、带有神经质色彩的唠叨；他的身旁是儿子随时可能发生的生理啼哭；他的下方是散发着潮湿霉味的、因尿湿而湿透的褥子。父亲、丈夫、劳动者这三重不同的伦理身份，被迫在这个仅有几平方米的物理平面上发生高密度的重叠与撞击。</p>
+
+                    <p>这种私人空间的方寸化，直接导致了个体伦理身份的“受刑姿态”。在正常的社会空间分布中，个体的不同身份应当在不同的物理空间及时间段内获得合理的切换与释压；但在印家厚的蜗居内，由于物理空间的绝对匮乏，这种学理上的缓冲地带被彻底消灭。</p>
+
+                    <p>为了进一步透视这种家庭空间的崩塌，必须注意到文本中关于“板壁”这一物理隔绝道具的反讽性运用。薄薄的木板壁在几何学上划分了不同家庭的边界，但在声学和心理学上，它非但没有起到保护隐私的作用，反而成为了匮乏经验的共享通道[2]：</p>
+
+                    <blockquote class="my-6 p-5 pl-6 bg-warm-hover/40 rounded-2xl border-l-4 border-sage italic font-light">
+                        “隔壁老张家的咳嗽声、叹气声，甚至是锅铲撞击铁锅的刺耳声，都能毫无阻拦地穿透这层薄薄的木板。印家厚躺在床上，不仅要承受自己屋里的烦恼，还要被动地收听隔壁人家的贫穷与争吵。整个筒子楼如同一具巨大的、由无数蜂巢形格子拼凑而成的共振箱，任何一点生存的痛苦都会在这个箱体内被放大数十倍，然后以噪音的形式反噬每一个居住者。”
+                    </blockquote>
+
+                    <p>这种私人空间的全面“噪音化”，彻底剥夺了个体精神退守的可能[2]。妻子关于住房调配的焦虑、关于双职工入托难的抱怨，都在这一充满共振的物质环境内演化为一种精神上的慢性重刑。物理上的避无可避，使得私人空间不仅未能起到抵抗外部世界体制化异化的堡垒作用，反而成为外部生存重负在内部空间的无限蔓延与高压放大器。在这里，家不再是灵魂的栖息地，而是一个更加具体的、将个体的肉体与伦理身份死死卡住、使其无法动弹的受刑之所[2]。</p>
+
+                    <h3 class="font-chinese text-2xl font-semibold text-warm-dark mt-12 mb-6 tracking-wide border-l-2 border-sage pl-4">（四）封闭的时空同构：一日叙事的“圆形锁链”与生存重负的无解循环</h3>
+
+                    <p>在探讨了物理空间的水平闭锁性（公共交通的拥挤、办公室的规训、蜗居的方寸化）之后，本篇评论必须转向小说在时间轴向上的纵深设计——即严格遵循古典主义“三一律”式的、从小说的清晨开始到子夜结束的“一日叙事”结构。这种将一生的漫长烦恼、匮乏与绝望高度浓缩于二十四小时内的精微叙事框架，并非单纯的结构巧合，而是与前述的封闭物理空间构成了完美的时空同构。它旨在证明，生存重负在现代社会底层个体身上具有一种坚不可摧的“圆形循环性”[3]：</p>
+
+                    <blockquote class="my-6 p-5 pl-6 bg-warm-hover/40 rounded-2xl border-l-4 border-sage italic font-light">
+                        “印家厚在一天之中遇到家庭、工作、情感上的各种烦恼，倍感折磨……夜深了，外面的世界终于安静下来。他躺在床上，听着身边妻子均匀的呼吸声和儿子偶尔的呓语。他的身体酸痛，大脑皮层却因为这一天密集的变故而微微发麻。然而，还没等他真正沉入睡眠，他的意识里已经开始自动勾勒明天的日程：几点起床，怎么去抢轮渡，怎么面对车间里的机器，怎么解决儿子的入托问题……黑暗中，时间像一条看不见的锁链，死死扣住他的脖子。”
+                    </blockquote>
+
+                    <p>在这个精密的一日结构中，时间在池莉的笔下彻底失去了带有现代启蒙色彩的、线性向前、通往美好未来的演进意义，转而蜕变为一种极具宿命论色彩的、周而复始的圆形闭环。印家厚在这天中所经历的种种生活龃龉——儿子的入托危机、上班挤车的狼狈、车间技术评定的人际博弈、面对陈秀子时的道德天平倾斜、住房面积的局限——绝对不是一次性的、偶然发生的孤立事件，而是预示着未来五年、十年乃至其整个后半生都将重复上演的“日常生存常态”。</p>
+
+                    <p>当我们将“圆形的时间轴”与“封闭的物理空间”进行叠加时，可以清晰地勾勒出底层个体的终极悲剧：空间的封闭斩断了空间向上或向外延展变迁的物理可能性（他无法改变目前的住房，无法调离这个工厂，无法摆脱这班轮渡），而时间的循环则彻底抹杀了时间向下迭代更新的精神希望（明天和今天在本质上毫无二致，昨天的烦恼即是明天的剧本）。这种时空的双重钳制，正是池莉对转型期城市底层生存状态最深刻的学理表征[5]。</p>
+
+                    <p>进一步剖析文本中印家厚对时间的心理体验，可以发现时间在这里呈现出一种高度碎片化却又高度凝固的悖论特征。每一分钟都被具体的事务性生存行为（买早点、赶车、打卡、对零件）所撕裂，但整个二十四小时的运行轨迹又展现出一种毫无缝隙的黏稠感：</p>
+
+                    <blockquote class="my-6 p-5 pl-6 bg-warm-hover/40 rounded-2xl border-l-4 border-sage italic font-light">
+                        “表针在滴答走着，那声音在深夜里显得格外清晰而残酷。印家厚闭上眼睛，他觉得自己不是在过日子，而是在一台巨大的、永不磨损的钟表齿轮间被动地穿行。齿轮的每一个咬合都在消耗他的血肉，而他却无法让这台机器停下哪怕一秒钟。”
+                    </blockquote>
+
+                    <p>这种对时间的机械化体验，有力地揭示了现代工业文明对个体生命节律的全面剥夺。个体的生命史被简化为了二十四小时的无限次格式化重启。</p>
+
+                    <p>小说结尾处展现的主人公自我心理防御机制，更是将这种无解的循环推向了荒诞的极致：</p>
+
+                    <blockquote class="my-6 p-5 pl-6 bg-warm-hover/40 rounded-2xl border-l-4 border-sage italic font-light">
+                        “他只能自我欺骗，感到‘你现在所经历的这一切都是梦，你在做一个很长的梦，醒来之后其实一切都不是这样的。’他非常相信自己的话，于是就安心入睡了。”
+                    </blockquote>
+
+                    <p>这一富有深意的叙事细节绝非闲笔，它深刻折射出凡俗个体在面对坚不可摧的现实重负时，由于找不到任何有效的形而上超拔通道或现实突围路径，最终只能被迫退缩至虚无的“精神胜利法”[9]中，通过将残酷的现实编码为“虚幻的梦境”来获取片刻苟延残喘的虚假安宁。这种自我欺骗的安心入睡，不仅未能实现对牢笼的真正破局，反而以一种极其反讽的姿态，确立了其下一次清晨醒来时、新一轮时空围剿必将如期而至的绝望循环。个体生命力就在这长年累月的、日复一日的无形损耗中，被世俗的泥沙彻底吞噬。</p>
+
+                    <hr class="my-10 border-warm-dark/10">
+
+                    <p>综上所述，池莉在《烦恼人生》中所践行的“新写实主义”创作理念，并非停留在对市民阶层庸常生活琐碎片段的客观罗列或流水账式的粗糙记录。相反，文本通过对公共交通与权力场域的物理封闭、家庭蜗居对社会及伦理身份的悬置规训、以及一日叙事框架下圆形时间锁链对生存重负的无限循环进行了极具深度与逻辑力量的文本建构。</p>
+
+                    <p>总而言之，小说中那些令人窒息的闭锁空间（车厢、轮渡、方寸床第）和精细到分钟、周而复始的时间编排，在本质上共同构成了一个巨大的、无形却坚固的“庸常牢笼”。它以冷峻的、零度情感的笔触[7]，彻底解构了宏大历史叙事中对工人阶级命运所赋予的、不切实际的英雄主义想象与浪漫化启蒙叙事，精准而冷酷地表征了凡俗个体在转型期现代性大潮中不可逆转的精神疲态与肉体困境。</p>
+
+                    <p>正如本文开头以及标题所预示的那样，“时空囚笼”的物理闭锁与“身份驯化”的伦理受刑，构成了透视这部新写实主义经典文本的终极钥匙。池莉向读者呈现了一个无处可逃的、属于当代城市凡俗世界的西西弗斯神话[3]。正如那句极具穿透力与批判深度的学术判词所揭示的：“封锁终将解除，而困境永无出路。”在时空的双重绞杀下，个体的所有挣扎不仅无法换来任何形而上的神圣救赎或精神超拔，反而进一步以其肉体的痛苦，确立并证明了那坚不可摧的现实引力对日常生活的绝对统治。这正是《烦恼人生》超越一般庸俗社会学生活素描、最终上升至深刻存在主义生存哲学反思的崇高文学价值之所在。</p>
+                </main>
+
+                <!-- References -->
+                <footer class="pt-10 border-t border-warm-dark/10 space-y-8">
+                    <div>
+                        <h4 class="font-serif text-sm uppercase tracking-widest text-sage font-semibold mb-4">References / 参考文献</h4>
+                        <ol class="space-y-2 font-chinese text-xs md:text-sm text-warm-gray font-light leading-relaxed">
+                            <li>[1] 池莉. 烦恼人生[M]. 武汉: 长江文艺出版社, 1988.</li>
+                            <li>[2] [法] 加斯东·巴什拉. 空间诗学[M]. 张逸婧, 译. 上海: 上海译文出版社, 2019.</li>
+                            <li>[3] [法] 阿尔贝·加缪. 西西弗神话[M]. 杜小真, 译. 北京: 商务印书馆, 2013.</li>
+                            <li>[4] [法] 米歇尔·福柯. 规训与惩罚[M]. 刘北成, 杨远婴, 译. 北京: 三联书店, 2012.</li>
+                            <li>[5] 陈晓明. 中国当代文学主潮[M]. 北京: 北京大学出版社, 2009: 312-328.</li>
+                            <li>[6] 陈思和. 中国当代文学史教程[M]. 上海: 复旦大学出版社, 2016: 275-288.</li>
+                            <li>[7] 贺绍俊. 凡俗生活的还原与重组——“新写实小说”的文学史意义[J]. 文学评论, 1993(04): 45-53.</li>
+                            <li>[8] 张清华. 中国当代文学中的“日常性”与“现代性困境”[J]. 文艺研究, 2005(08): 12-21.</li>
+                            <li>[9] 鲁迅. 阿Q正传[M]//鲁迅全集: 第一卷. 北京: 人民文学出版社, 2005: 488-532.</li>
+                        </ol>
+                    </div>
+
+                    <!-- Sign-off -->
+                    <div class="pt-12 flex flex-col items-end border-t border-warm-dark/5 space-y-2 select-none">
+                        <div class="font-chinese text-xl text-warm-dark font-medium tracking-widest">署名：韩紫</div>
+                        <div class="font-mono text-sm text-sage tracking-wider">日期：2026.6.24</div>
+                    </div>
+                </footer>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // Article Detail View Transition Controller
+        const openArticleBtn = document.getElementById('open-article-btn');
+        const closeArticleBtn = document.getElementById('close-article-btn');
+        const articleView = document.getElementById('article-view');
+        const mainContentWrapper = document.getElementById('main-content-wrapper');
+
+        function showArticle() {
+            articleView.classList.remove('hidden');
+            setTimeout(() => {
+                articleView.classList.remove('opacity-0', 'translate-y-8');
+                articleView.classList.add('opacity-100', 'translate-y-0');
+            }, 20);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function hideArticle() {
+            articleView.classList.remove('opacity-100', 'translate-y-0');
+            articleView.classList.add('opacity-0', 'translate-y-8');
+            setTimeout(() => {
+                articleView.classList.add('hidden');
+                document.getElementById('words').scrollIntoView({ behavior: 'smooth' });
+            }, 500);
+        }
+
+        if (openArticleBtn) openArticleBtn.addEventListener('click', showArticle);
+        if (closeArticleBtn) closeArticleBtn.addEventListener('click', hideArticle);
+
+        // ClickSpark Cursor
+        (function initClickSpark() {
+            const canvas = document.getElementById('click-spark-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            let sparks = [];
+            const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+            window.addEventListener('resize', resize);
+            resize();
+            window.addEventListener('click', (e) => {
+                const sparkCount = 8;
+                const now = performance.now();
+                for (let i = 0; i < sparkCount; i++) {
+                    sparks.push({ x: e.clientX, y: e.clientY, angle: (2 * Math.PI * i) / sparkCount, startTime: now });
+                }
+            });
+            function loop(timestamp) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                sparks = sparks.filter(spark => {
+                    const elapsed = timestamp - spark.startTime;
+                    if (elapsed >= 400) return false;
+                    const progress = elapsed / 400;
+                    const distance = progress * (2 - progress) * 25;
+                    const x1 = spark.x + distance * Math.cos(spark.angle);
+                    const y1 = spark.y + distance * Math.sin(spark.angle);
+                    const x2 = spark.x + (distance + 17 * (1-progress)) * Math.cos(spark.angle);
+                    const y2 = spark.y + (distance + 17 * (1-progress)) * Math.sin(spark.angle);
+                    ctx.strokeStyle = '#aed3e5'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+                    return true;
+                });
+                requestAnimationFrame(loop);
+            }
+            requestAnimationFrame(loop);
+        })();
+
+        // Init Codrops Gooey Link Character Spans & Liquid Hover
+        document.querySelectorAll('.gooey-link').forEach(link => {
+            const text = link.getAttribute('data-gooey-text');
+            const container = link.querySelector('.gooey-chars-container');
+            if (!text || !container) return;
+
+            container.innerHTML = '';
+            [...text].forEach((char, i) => {
+                const span = document.createElement('span');
+                span.className = 'gooey-char';
+                span.textContent = char;
+                span.style.transitionDelay = `${i * 35}ms`;
+                container.appendChild(span);
+            });
+
+            link.addEventListener('mousemove', (e) => {
+                const rect = link.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const blob = link.querySelector('.gooey-bg-blob');
+                if (blob) {
+                    blob.style.left = `${x}px`;
+                }
+            });
+        });
+
+        // Automatic LetterSwap Generator
+        document.querySelectorAll('.letter-swap').forEach(el => {
+            const pureText = el.textContent.trim();
+            el.innerHTML = '';
+            
+            [...pureText].forEach((char, index) => {
+                if (char === ' ') {
+                    const space = document.createElement('span');
+                    space.innerHTML = '&nbsp;';
+                    el.appendChild(space);
+                    return;
+                }
+                
+                const wrapper = document.createElement('span');
+                wrapper.className = 'char-wrapper inline-block';
+                
+                const primary = document.createElement('span');
+                primary.className = 'char-primary inline-block';
+                primary.textContent = char;
+                primary.style.transitionDelay = `${index * 25}ms`;
+                
+                const secondary = document.createElement('span');
+                secondary.className = 'char-secondary absolute left-0 top-0 inline-block text-sage';
+                secondary.textContent = char;
+                secondary.style.transform = 'translateY(100%)';
+                secondary.style.transitionDelay = `${index * 25}ms`;
+                
+                wrapper.appendChild(primary);
+                wrapper.appendChild(secondary);
+                el.appendChild(wrapper);
+            });
+        });
+
+        // Lightfall Shader Engine (Words Section)
+        (function initWordsLightfall() {
+            const container = document.getElementById('words-lightfall-container');
+            const wordsSection = document.getElementById('words');
+            if (!container || !wordsSection || typeof OGL === 'undefined') return;
+
+            const { Renderer, Program, Mesh, Triangle } = OGL;
+
+            const MAX_COLORS = 8;
+            const hexToRGB = hex => {
+                const c = hex.replace('#', '').padEnd(6, '0');
+                const r = parseInt(c.slice(0, 2), 16) / 255;
+                const g = parseInt(c.slice(2, 4), 16) / 255;
+                const b = parseInt(c.slice(4, 6), 16) / 255;
+                return [r, g, b];
+            };
+
+            const prepColors = input => {
+                const base = (input && input.length ? input : ['#A6C8FF', '#5227FF', '#FF9FFC']).slice(0, MAX_COLORS);
+                const count = base.length;
+                const arr = [];
+                for (let i = 0; i < MAX_COLORS; i++) arr.push(hexToRGB(base[Math.min(i, base.length - 1)]));
+                const avg = [0, 0, 0];
+                for (let i = 0; i < count; i++) {
+                    avg[0] += arr[i][0];
+                    avg[1] += arr[i][1];
+                    avg[2] += arr[i][2];
+                }
+                avg[0] /= count;
+                avg[1] /= count;
+                avg[2] /= count;
+                return { arr, count, avg };
+            };
+
+            const vertex = `
+            attribute vec2 position;
+            attribute vec2 uv;
+            varying vec2 vUv;
+            void main() {
+                vUv = uv;
+                gl_Position = vec4(position, 0.0, 1.0);
+            }
+            `;
+
+            const fragment = `
+            precision highp float;
+
+            uniform vec3  iResolution;
+            uniform vec2  iMouse;
+            uniform float iTime;
+
+            uniform vec3  uColor0;
+            uniform vec3  uColor1;
+            uniform vec3  uColor2;
+            uniform vec3  uColor3;
+            uniform vec3  uColor4;
+            uniform vec3  uColor5;
+            uniform vec3  uColor6;
+            uniform vec3  uColor7;
+            uniform int   uColorCount;
+
+            uniform vec3  uBgColor;
+            uniform vec3  uMouseColor;
+            uniform float uSpeed;
+            uniform int   uStreakCount;
+            uniform float uStreakWidth;
+            uniform float uStreakLength;
+            uniform float uGlow;
+            uniform float uDensity;
+            uniform float uTwinkle;
+            uniform float uZoom;
+            uniform float uBgGlow;
+            uniform float uOpacity;
+            uniform float uMouseEnabled;
+            uniform float uMouseStrength;
+            uniform float uMouseRadius;
+
+            varying vec2 vUv;
+
+            vec3 palette(float h) {
+                int count = uColorCount;
+                if (count < 1) count = 1;
+                int idx = int(floor(clamp(h, 0.0, 0.999999) * float(count)));
+                if (idx <= 0) return uColor0;
+                if (idx == 1) return uColor1;
+                if (idx == 2) return uColor2;
+                if (idx == 3) return uColor3;
+                if (idx == 4) return uColor4;
+                if (idx == 5) return uColor5;
+                if (idx == 6) return uColor6;
+                return uColor7;
+            }
+
+            vec3 tanhv(vec3 x) {
+                vec3 e = exp(-2.0 * x);
+                return (1.0 - e) / (1.0 + e);
+            }
+
+            vec2 sceneC(vec2 frag, vec2 r) {
+                vec2 P = (frag + frag - r) / r.x;
+                float z = 0.0;
+                float d = 1e3;
+                vec4 O = vec4(0.0);
+                for (int k = 0; k < 39; k++) {
+                    if (d <= 1e-4) break;
+                    O = z * normalize(vec4(P, uZoom, 0.0)) - vec4(0.0, 4.0, 1.0, 0.0) / 4.5;
+                    d = 1.0 - sqrt(length(O * O));
+                    z += d;
+                }
+                return vec2(O.x, atan(O.z, O.y));
+            }
+
+            void mainImage(out vec4 o, vec2 C) {
+                vec2 r = iResolution.xy;
+                vec2 uv0 = (C + C - r) / r.x;
+                float T = 0.1 * iTime * uSpeed + 9.0;
+                float angRings = max(1.0, floor(6.28318530718 * max(uDensity, 0.05) + 0.5));
+                vec2 Y = vec2(5e-3, 6.28318530718 / angRings);
+
+                vec2 c0 = sceneC(C, r);
+                vec2 cdx = sceneC(C + vec2(1.0, 0.0), r);
+                vec2 cdy = sceneC(C + vec2(0.0, 1.0), r);
+                vec2 dCx = cdx - c0;
+                vec2 dCy = cdy - c0;
+                dCx.y -= 6.28318530718 * floor(dCx.y / 6.28318530718 + 0.5);
+                dCy.y -= 6.28318530718 * floor(dCy.y / 6.28318530718 + 0.5);
+                vec2 fw = abs(dCx) + abs(dCy);
+                C = c0;
+
+                vec2 P = vec2(2.0, 1.0) * uv0 - (r / r.x) * vec2(0.0, 1.0);
+                vec4 O = vec4(uBgColor * 90.0 * uBgGlow / (1e3 * dot(P, P) + 6.0), 0.0);
+
+                float mGlow = 0.0;
+                if (uMouseEnabled > 0.5) {
+                    vec2 mN = (iMouse + iMouse - r) / r.x;
+                    float md = length(uv0 - mN);
+                    mGlow = exp(-md * md / max(uMouseRadius * uMouseRadius, 1e-4)) * uMouseStrength;
+                    O.rgb += uMouseColor * mGlow * 0.25;
+                }
+
+                float zr = 5e-4 * uStreakWidth;
+                vec2 rr = vec2(max(length(fw), 1e-5));
+                float tail = 19.0 / max(uStreakLength, 0.05);
+
+                for (int m = 0; m < 16; m++) {
+                    if (m >= uStreakCount) break;
+                    float jf = float(m) + 1.0;
+                    float ic = fract(sin(dot(vec2(jf, floor(C.x / Y.x + 0.5)), vec2(7.0, 11.0)) * 73.0));
+                    vec2 Pp = C - (T + T * ic) * vec2(0.0, 1.0);
+                    Pp -= floor(Pp / Y + 0.5) * Y;
+                    float h = fract(8663.0 * ic);
+                    vec3 col = palette(h);
+                    float weight = mix(1.5, 1.0 + sin(T + 7.0 * h + 4.0), uTwinkle);
+                    weight *= (1.0 + mGlow * 2.0);
+                    vec2 inner = vec2(length(max(Pp, vec2(-1.0, 0.0))), length(Pp) - zr) - zr;
+                    vec2 sm = vec2(1.0) - smoothstep(-rr, rr, inner);
+                    O.rgb += dot(sm, vec2(exp(tail * Pp.y), 3.0)) * col * weight;
+                    C.x += Y.x / 8.0;
+                }
+
+                vec3 colr = sqrt(tanhv(max(O.rgb * uGlow - vec3(0.04, 0.08, 0.02), 0.0)));
+                o = vec4(colr, uOpacity);
+            }
+
+            void main() {
+                vec4 color;
+                mainImage(color, vUv * iResolution.xy);
+                gl_FragColor = color;
+            }
+            `;
+
+            const renderer = new Renderer({
+                dpr: window.devicePixelRatio || 1,
+                alpha: true,
+                antialias: true
+            });
+            const gl = renderer.gl;
+            const canvas = gl.canvas;
+            gl.clearColor(0, 0, 0, 0);
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+            canvas.style.display = 'block';
+            container.appendChild(canvas);
+
+            const { arr, count, avg } = prepColors(['#A6C8FF', '#5227FF', '#FF9FFC']);
+            const bgColorRGB = hexToRGB('#0A29FF');
+
+            const uniforms = {
+                iResolution: { value: [gl.drawingBufferWidth, gl.drawingBufferHeight, 1] },
+                iMouse: { value: [0, 0] },
+                iTime: { value: 0 },
+                uColor0: { value: arr[0] },
+                uColor1: { value: arr[1] },
+                uColor2: { value: arr[2] },
+                uColor3: { value: arr[3] },
+                uColor4: { value: arr[4] },
+                uColor5: { value: arr[5] },
+                uColor6: { value: arr[6] },
+                uColor7: { value: arr[7] },
+                uColorCount: { value: count },
+                uBgColor: { value: bgColorRGB },
+                uMouseColor: { value: avg },
+                uSpeed: { value: 0.5 },
+                uStreakCount: { value: 2 },
+                uStreakWidth: { value: 1.0 },
+                uStreakLength: { value: 1.0 },
+                uGlow: { value: 1.0 },
+                uDensity: { value: 0.6 },
+                uTwinkle: { value: 1.0 },
+                uZoom: { value: 3.0 },
+                uBgGlow: { value: 0.5 },
+                uOpacity: { value: 0.45 },
+                uMouseEnabled: { value: 1.0 },
+                uMouseStrength: { value: 0.5 },
+                uMouseRadius: { value: 1.0 }
+            };
+
+            const program = new Program(gl, { vertex, fragment, uniforms });
+            const geometry = new Triangle(gl);
+            const mesh = new Mesh(gl, { geometry, program });
+
+            const resize = () => {
+                const rect = container.getBoundingClientRect();
+                renderer.setSize(rect.width, rect.height);
+                uniforms.iResolution.value = [gl.drawingBufferWidth, gl.drawingBufferHeight, 1];
+            };
+
+            resize();
+            const ro = new ResizeObserver(resize);
+            ro.observe(container);
+
+            const mouseTarget = [0, 0];
+            const mouseDampening = 0.15;
+            let lastTime = 0;
+
+            const onPointerMove = e => {
+                const rect = canvas.getBoundingClientRect();
+                const sc = renderer.dpr || 1;
+                const x = (e.clientX - rect.left) * sc;
+                const y = (rect.height - (e.clientY - rect.top)) * sc;
+                mouseTarget[0] = x;
+                mouseTarget[1] = y;
+            };
+            wordsSection.addEventListener('pointermove', onPointerMove);
+
+            function loop(t) {
+                requestAnimationFrame(loop);
+                uniforms.iTime.value = t * 0.001;
+                if (!lastTime) lastTime = t;
+                const dt = (t - lastTime) / 1000;
+                lastTime = t;
+                const tau = Math.max(1e-4, mouseDampening);
+                let factor = 1 - Math.exp(-dt / tau);
+                if (factor > 1) factor = 1;
+                const cur = uniforms.iMouse.value;
+                cur[0] += (mouseTarget[0] - cur[0]) * factor;
+                cur[1] += (mouseTarget[1] - cur[1]) * factor;
+
+                try {
+                    renderer.render({ scene: mesh });
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+            requestAnimationFrame(loop);
+        })();
+
+        // Native WebGL Ferrofluid Shader (Core Philosophy)
+        (function initNativeWebGLFerrofluid() {
+            const canvas = document.getElementById('ferrofluid-canvas');
+            const container = document.getElementById('core-philosophy-container');
+            if (!canvas || !container) return;
+
+            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+            if (!gl) return;
+
+            const vertShaderSource = `
+                attribute vec2 aPosition;
+                varying vec2 vUv;
+                void main() {
+                    vUv = (aPosition + 1.0) * 0.5;
+                    gl_Position = vec4(aPosition, 0.0, 1.0);
+                }
+            `;
+
+            const fragShaderSource = `
+                precision highp float;
+
+                uniform vec3  iResolution;
+                uniform vec2  iMouse;
+                uniform float iTime;
+
+                uniform vec3  uColor0;
+                uniform vec3  uColor1;
+                uniform vec3  uColor2;
+                uniform vec3  uColor3;
+                uniform vec3  uColor4;
+                uniform vec3  uColor5;
+                uniform vec3  uColor6;
+                uniform vec3  uColor7;
+                uniform int   uColorCount;
+
+                uniform vec3  uMouseColor;
+                uniform vec2  uFlow;
+                uniform float uSpeed;
+                uniform float uScale;
+                uniform float uTurbulence;
+                uniform float uFluidity;
+                uniform float uRimWidth;
+                uniform float uSharpness;
+                uniform float uShimmer;
+                uniform float uGlow;
+                uniform float uOpacity;
+                uniform float uMouseEnabled;
+                uniform float uMouseStrength;
+                uniform float uMouseRadius;
+
+                varying vec2 vUv;
+
+                #define PI 3.14159265
+
+                vec3 palette(float h) {
+                    int count = uColorCount;
+                    if (count < 1) count = 1;
+                    int idx = int(floor(clamp(h, 0.0, 0.999999) * float(count)));
+                    if (idx <= 0) return uColor0;
+                    if (idx == 1) return uColor1;
+                    if (idx == 2) return uColor2;
+                    if (idx == 3) return uColor3;
+                    if (idx == 4) return uColor4;
+                    if (idx == 5) return uColor5;
+                    if (idx == 6) return uColor6;
+                    return uColor7;
+                }
+
+                float hash(vec3 p3) {
+                    p3 = fract(p3 * 0.1031);
+                    p3 += dot(p3, p3.zyx + 33.33);
+                    return fract((p3.x + p3.y) * p3.z);
+                }
+
+                float smin(float a, float b, float k) {
+                    float r = exp2(-a / k) + exp2(-b / k);
+                    return -k * log2(r);
+                }
+
+                float sinlerp(float a, float b, float w) {
+                    return mix(a, b, (sin(w * PI - PI / 2.0) + 1.0) / 2.0);
+                }
+
+                float vn(vec2 p, float s, float seed) {
+                    vec2 cellp = floor(p / s);
+                    vec2 relp = mod(p, s);
+                    float g1 = hash(vec3(cellp, seed));
+                    float g2 = hash(vec3(cellp.x + 1.0, cellp.y, seed));
+                    float g3 = hash(vec3(cellp.x + 1.0, cellp.y + 1.0, seed));
+                    float g4 = hash(vec3(cellp.x, cellp.y + 1.0, seed));
+                    float bx = sinlerp(g1, g2, relp.x / s);
+                    float tx = sinlerp(g4, g3, relp.x / s);
+                    return sinlerp(bx, tx, relp.y / s);
+                }
+
+                float dbn(vec2 p, float s, float seed) {
+                    float o = s / 2.0;
+                    float n0 = vn(p, s, seed);
+                    float n1 = vn(p + vec2(o, o), s, seed + 0.1);
+                    float n2 = vn(p + vec2(-o, o), s, seed + 0.2);
+                    float n3 = vn(p + vec2(o, -o), s, seed + 0.3);
+                    float n4 = vn(p + vec2(-o, -o), s, seed + 0.4);
+                    return (2.0 * n0 + 1.5 * n1 + 1.25 * n2 + 1.125 * n3 + n4) / 7.0;
+                }
+
+                void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+                    float ref = 700.0 / max(uScale, 0.05);
+                    vec2 p = fragCoord / iResolution.y * ref;
+
+                    float spd = 200.0 * uSpeed;
+                    float t = iTime;
+
+                    vec2 dir = uFlow;
+                    vec2 perp = vec2(-dir.y, dir.x);
+
+                    float distort1 = vn(p + perp * (t * spd), 60.0, 10.0) * 50.0 * uTurbulence;
+                    float distort2 = vn(p - perp * (t * spd), 120.0, 15.0) * 100.0 * uTurbulence;
+
+                    float peaks = dbn(p + distort1 + dir * (t * spd * 0.5), 40.0, 1.0);
+                    float peaks2 = dbn(p + distort2 - dir * (t * spd * 0.5), 40.0, 0.0);
+
+                    float mapeaks = smin(peaks, peaks2, max(uFluidity, 0.001));
+
+                    float mGlow = 0.0;
+                    if (uMouseEnabled > 0.5) {
+                        vec2 mp = iMouse / iResolution.y * ref;
+                        float md = length(p - mp) / ref;
+                        float rr = max(uMouseRadius, 0.02);
+                        mGlow = exp(-md * md / (rr * rr)) * uMouseStrength;
+                    }
+
+                    float band = (uRimWidth - abs((mapeaks - 0.4) * 2.0)) * 5.0;
+                    float ltn = clamp(band - vn(p + dir * (t * spd * 0.5), 60.0, 12.0) * uShimmer, 0.0, 1.0);
+                    ltn = pow(ltn, uSharpness) * uGlow;
+                    ltn *= clamp(1.0 - mGlow, 0.0, 1.0);
+
+                    float h = clamp(0.5 + (peaks - peaks2) * 0.8, 0.0, 1.0);
+                    vec3 col = palette(h);
+
+                    vec3 outc = col * ltn;
+                    float a = clamp(max(outc.r, max(outc.g, outc.b)), 0.0, 1.0);
+                    fragColor = vec4(outc, a * uOpacity);
+                }
+
+                void main() {
+                    vec4 color;
+                    mainImage(color, vUv * iResolution.xy);
+                    gl_FragColor = color;
+                }
+            `;
+
+            function createShader(gl, type, source) {
+                const shader = gl.createShader(type);
+                gl.shaderSource(shader, source);
+                gl.compileShader(shader);
+                if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                    gl.deleteShader(shader);
+                    return null;
+                }
+                return shader;
+            }
+
+            const vertShader = createShader(gl, gl.VERTEX_SHADER, vertShaderSource);
+            const fragShader = createShader(gl, gl.FRAGMENT_SHADER, fragShaderSource);
+            if (!vertShader || !fragShader) return;
+
+            const program = gl.createProgram();
+            gl.attachShader(program, vertShader);
+            gl.attachShader(program, fragShader);
+            gl.linkProgram(program);
+            gl.useProgram(program);
+
+            const positionBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+                -1, -1,  1, -1, -1,  1,
+                -1,  1,  1, -1,  1,  1
+            ]), gl.STATIC_DRAW);
+
+            const aPosition = gl.getAttribLocation(program, 'aPosition');
+            gl.enableVertexAttribArray(aPosition);
+            gl.vertexAttribPointer(aPosition, 2, gl.FLOAT, false, 0, 0);
+
+            const uLocs = {
+                iResolution: gl.getUniformLocation(program, 'iResolution'),
+                iMouse: gl.getUniformLocation(program, 'iMouse'),
+                iTime: gl.getUniformLocation(program, 'iTime'),
+                uColor0: gl.getUniformLocation(program, 'uColor0'),
+                uColor1: gl.getUniformLocation(program, 'uColor1'),
+                uColor2: gl.getUniformLocation(program, 'uColor2'),
+                uColor3: gl.getUniformLocation(program, 'uColor3'),
+                uColor4: gl.getUniformLocation(program, 'uColor4'),
+                uColor5: gl.getUniformLocation(program, 'uColor5'),
+                uColor6: gl.getUniformLocation(program, 'uColor6'),
+                uColor7: gl.getUniformLocation(program, 'uColor7'),
+                uColorCount: gl.getUniformLocation(program, 'uColorCount'),
+                uMouseColor: gl.getUniformLocation(program, 'uMouseColor'),
+                uFlow: gl.getUniformLocation(program, 'uFlow'),
+                uSpeed: gl.getUniformLocation(program, 'uSpeed'),
+                uScale: gl.getUniformLocation(program, 'uScale'),
+                uTurbulence: gl.getUniformLocation(program, 'uTurbulence'),
+                uFluidity: gl.getUniformLocation(program, 'uFluidity'),
+                uRimWidth: gl.getUniformLocation(program, 'uRimWidth'),
+                uSharpness: gl.getUniformLocation(program, 'uSharpness'),
+                uShimmer: gl.getUniformLocation(program, 'uShimmer'),
+                uGlow: gl.getUniformLocation(program, 'uGlow'),
+                uOpacity: gl.getUniformLocation(program, 'uOpacity'),
+                uMouseEnabled: gl.getUniformLocation(program, 'uMouseEnabled'),
+                uMouseStrength: gl.getUniformLocation(program, 'uMouseStrength'),
+                uMouseRadius: gl.getUniformLocation(program, 'uMouseRadius')
+            };
+
+            const c0 = [1.0, 1.0, 1.0];
+            const c1 = [157/255, 175/255, 137/255];
+            const c2 = [1.0, 1.0, 1.0];
+
+            gl.uniform3fv(uLocs.uColor0, c0);
+            gl.uniform3fv(uLocs.uColor1, c1);
+            gl.uniform3fv(uLocs.uColor2, c2);
+            gl.uniform3fv(uLocs.uColor3, c2);
+            gl.uniform3fv(uLocs.uColor4, c2);
+            gl.uniform3fv(uLocs.uColor5, c2);
+            gl.uniform3fv(uLocs.uColor6, c2);
+            gl.uniform3fv(uLocs.uColor7, c2);
+            gl.uniform1i(uLocs.uColorCount, 3);
+
+            gl.uniform3fv(uLocs.uMouseColor, [0.86, 0.9, 0.82]);
+            gl.uniform2f(uLocs.uFlow, 1.0, 0.0);
+            gl.uniform1f(uLocs.uSpeed, 0.5);
+            gl.uniform1f(uLocs.uScale, 1.5);
+            gl.uniform1f(uLocs.uTurbulence, 1.0);
+            gl.uniform1f(uLocs.uFluidity, 0.19);
+            gl.uniform1f(uLocs.uRimWidth, 0.2);
+            gl.uniform1f(uLocs.uSharpness, 2.1);
+            gl.uniform1f(uLocs.uShimmer, 1.5);
+            gl.uniform1f(uLocs.uGlow, 1.8);
+            gl.uniform1f(uLocs.uOpacity, 1.0);
+            gl.uniform1f(uLocs.uMouseEnabled, 1.0);
+            gl.uniform1f(uLocs.uMouseStrength, 1.0);
+            gl.uniform1f(uLocs.uMouseRadius, 0.35);
+
+            let currentMouse = [0, 0];
+            let targetMouse = [0, 0];
+
+            function handleResize() {
+                const rect = container.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                canvas.width = rect.width * dpr;
+                canvas.height = rect.height * dpr;
+                gl.viewport(0, 0, canvas.width, canvas.height);
+                gl.uniform3f(uLocs.iResolution, canvas.width, canvas.height, 1.0);
+            }
+
+            window.addEventListener('resize', handleResize);
+            handleResize();
+
+            container.addEventListener('pointermove', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                targetMouse[0] = (e.clientX - rect.left) * dpr;
+                targetMouse[1] = (rect.height - (e.clientY - rect.top)) * dpr;
+            });
+
+            let startTime = performance.now();
+
+            function render(now) {
+                const elapsed = (now - startTime) * 0.001;
+                currentMouse[0] += (targetMouse[0] - currentMouse[0]) * 0.1;
+                currentMouse[1] += (targetMouse[1] - currentMouse[1]) * 0.1;
+
+                gl.uniform1f(uLocs.iTime, elapsed);
+                gl.uniform2f(uLocs.iMouse, currentMouse[0], currentMouse[1]);
+
+                gl.drawArrays(gl.TRIANGLES, 0, 6);
+                requestAnimationFrame(render);
+            }
+
+            requestAnimationFrame(render);
+        })();
+
+        // Portrait Gallery switch logic
+        (function initPortrait() {
+            const slot = document.getElementById('photo-dom-slot');
+            const dots = document.getElementById('photo-dots');
+            if(!slot) return;
+            const photos = [
+                "https://raw.githubusercontent.com/sagetotree919/my-portfolio/main/photo1.jpg",
+                "https://raw.githubusercontent.com/sagetotree919/my-portfolio/main/photo2.jpg",
+                "https://raw.githubusercontent.com/sagetotree919/my-portfolio/main/photo3.jpg",
+                "https://raw.githubusercontent.com/sagetotree919/my-portfolio/main/photo4.jpg",
+                "https://raw.githubusercontent.com/sagetotree919/my-portfolio/main/photo5.jpg",
+                "https://raw.githubusercontent.com/sagetotree919/my-portfolio/main/photo6.jpg",
+                "https://raw.githubusercontent.com/sagetotree919/my-portfolio/main/photo7.jpg",
+                "https://raw.githubusercontent.com/sagetotree919/my-portfolio/main/photo8.jpg"
+            ];
+            let current = 0;
+            slot.style.backgroundImage = `url(${photos[0]})`;
+            slot.style.backgroundSize = 'cover';
+            slot.style.backgroundPosition = 'center';
+
+            photos.forEach((_, i) => {
+                const dot = document.createElement('div');
+                dot.className = `w-1.5 h-1.5 rounded-full transition-all ${i===0 ? 'bg-sage scale-125' : 'bg-warm-dark/20'}`;
+                dots.appendChild(dot);
+            });
+
+            slot.onclick = () => {
+                current = (current + 1) % photos.length;
+                slot.style.backgroundImage = `url(${photos[current]})`;
+                document.getElementById('photo-counter').textContent = `${String(current+1).padStart(2,'0')} / 08`;
+                Array.from(dots.children).forEach((d, i) => d.className = `w-1.5 h-1.5 rounded-full transition-all ${i===current ? 'bg-sage scale-125' : 'bg-warm-dark/20'}`);
+            };
+        })();
+
+        // Reveal observer
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => { if (entry.isIntersecting) entry.target.classList.add('active'); });
+        }, { threshold: 0.1 });
+        document.querySelectorAll('.reveal-element').forEach(el => revealObserver.observe(el));
+    </script>
+</body>
+</html>
